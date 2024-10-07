@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo com Foguete</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            margin: 0;
+            background-color: #87CEEB;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        .ground {
+            background-color: #4CAF50;
+            height: 100px;
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+        }
+
+        #character {
+            width: 30px; /* Tamanho menor para o personagem */
+            height: 30px; /* Tamanho menor para o personagem */
+            position: absolute;
+            bottom: 120px; /* Mover um pouquinho para cima */
+            left: 50px;
+            transition: transform 0.2s; /* Transição suave para a rotação */
+        }
+
+        #character img {
+            width: 100%;
+            height: auto; /* Mantém a proporção da imagem */
+        }
+
+        .rocket-part {
+            width: 30px;
+            height: 20px;
+            position: absolute;
+            display: none;
+            left: 100px;
+        }
+
+        .item {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+        }
+
+        .ball {
+            width: 80px;
+            height: 80px;
+            background-color: yellow;
+            border-radius: 50%;
+            position: absolute;
+            top: 60px;
+            left: 20px;
+            cursor: pointer;
+        }
+
+        button {
+            margin: 10px;
+            padding: 10px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 150px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        #leftBtn::before {
+            content: '◀';
+            font-size: 24px;
+        }
+
+        #rightBtn::before {
+            content: '▶';
+            font-size: 24px;
+        }
+
+        #launchBtn {
+            background-color: #4CAF50;
+            margin-bottom: 20px;
+        }
+
+        #resetBtn {
+            background-color: #f44336;
+            margin-top: 20px;
+        }
+
+        #message {
+            margin-top: 10px;
+            font-size: 1.2em;
+        }
+
+        .quiz-container {
+            position: relative;
+            margin-top: 50px;
+        }
+
+        .quiz-button {
+            margin: 5px;
+            width: 150px;
+            height: 45px;
+        }
+
+        .movement-buttons {
+            display: flex;
+            position: absolute;
+            bottom: 10px;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="ground"></div>
+    <div id="character">
+        <img src="ooo.jpeg" alt="Personagem"> <!-- Caminho para a imagem do personagem -->
+    </div>
+
+    <img id="item1" class="item" style="left: 150px; bottom: 100px;" src="k.jpeg" alt="Item 1">
+    <img id="item2" class="item" style="left: 200px; bottom: 100px;" src="r.jpeg" alt="Item 2">
+    <img id="item3" class="item" style="left: 250px; bottom: 100px;" src="imagem0.1.jpeg" alt="Item 3">
+
+    <img id="rocket-part1" class="rocket-part" style="bottom: 100px;" src="k.jpeg" alt="Parte do foguete 1">
+    <img id="rocket-part2" class="rocket-part" style="bottom: 120px;" src="r.jpeg" alt="Parte do foguete 2">
+    <img id="rocket-part3" class="rocket-part" style="bottom: 140px;" src="imagem0.1.jpeg" alt="Parte do foguete 3">
+
+    <div class="ball" id="interactiveBall"></div>
+
+    <button id="launchBtn" aria-label="Decolar">Decolar</button>
+    <button id="resetBtn" aria-label="Resetar o jogo">Resetar</button>
+
+    <div class="movement-buttons">
+        <button id="leftBtn" aria-label="Mover para a esquerda"></button>
+        <button id="rightBtn" aria-label="Mover para a direita"></button>
+    </div>
+
+    <div id="message"></div>
+
+    <div class="quiz-container" id="quizContainer" style="display: none;"></div>
+
+    <script>
+        let collectedItems = 0;
+        const totalItems = 3; // Total de itens para coletar (3 itens)
+        let canMove = true; // Controla se o personagem pode mover
+        let quizInProgress = false; // Controla se um quiz está em andamento
+        let isRocketReadyToLaunch = false; // Controla se o foguete está pronto para decolar
+
+        const character = document.getElementById('character');
+        const message = document.getElementById('message');
+        const rocketParts = [
+            document.getElementById('rocket-part1'),
+            document.getElementById('rocket-part2'),
+            document.getElementById('rocket-part3')
+        ];
+
+        const quizContainer = document.getElementById('quizContainer');
+
+        // Perguntas do quiz sobre foguetes (7 verdadeiras e 7 falsas)
+        const quizQuestions = [
+            { question: "Os foguetes são usados para levar cargas ao espaço.", answer: "Verdadeiro" },
+            { question: "A primeira missão a pousar na Lua foi chamada Apollo 12.", answer: "Falso" },
+            { question: "Foguetes funcionam com base no princípio da ação e reação.", answer: "Verdadeiro" },
+            { question: "O combustível sólido é usado em muitos foguetes.", answer: "Verdadeiro" },
+            { question: "A NASA foi fundada em 1965.", answer: "Falso" },
+            { question: "O foguete Saturn V foi o mais potente já construído.", answer: "Verdadeiro" },
+            { question: "A Estação Espacial Internacional (ISS) está localizada na órbita da Lua.", answer: "Falso" },
+            { question: "Os foguetes podem ser lançados horizontalmente.", answer: "Falso" },
+            { question: "O primeiro homem no espaço foi Neil Armstrong.", answer: "Falso" },
+            { question: "O ônibus espacial era uma forma de transporte para astronautas.", answer: "Verdadeiro" },
+            { question: "O projeto Apollo tinha como objetivo levar humanos à Lua.", answer: "Verdadeiro" },
+            { question: "A espaçonave Voyager 1 é a mais distante da Terra.", answer: "Verdadeiro" },
+            { question: "Os foguetes não podem ser reutilizados em várias missões.", answer: "Falso" },
+            { question: "A gravidade não afeta o lançamento de foguetes.", answer: "Falso" }
+        ];
+
+        // Embaralhar as perguntas
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        shuffleArray(quizQuestions); // Embaralha as perguntas ao iniciar
+
+        let currentQuestionIndex = -1; // Índice inicial da pergunta
+
+        // Função para verificar colisões
+        function isIntersecting(rect1, rect2) {
+            return !(rect2.left > rect1.right || 
+                     rect2.right < rect1.left || 
+                     rect2.top > rect1.bottom ||
+                     rect2.bottom < rect1.top);
+        }
+
+        // Função para coletar itens
+        function checkCollection() {
+            if (!canMove) return; // Impede a coleta se não puder mover
+
+            const charRect = character.getBoundingClientRect();
+            document.querySelectorAll('.item').forEach((item, index) => {
+                const itemRect = item.getBoundingClientRect();
+                if (isIntersecting(charRect, itemRect) && !item.classList.contains('collected')) {
+                    item.classList.add('collected');
+                    collectedItems++;
+                    item.style.display = 'none'; // Remove o item da tela
+                    rocketParts[index].style.display = 'block'; // Exibe a parte do foguete
+
+                    // Inicia um quiz após cada coleta
+                    showQuiz();
+
+                    // Se todos os itens foram coletados, prepara para a última pergunta ao apertar "Decolar"
+                    if (collectedItems === totalItems) {
+                        isRocketReadyToLaunch = true; // O foguete está pronto para decolar
+                    }
+
+                    canMove = false; // Desabilita movimento após coleta
+                }
+            });
+        }
+
+        // Função para exibir o quiz
+        function showQuiz() {
+            quizInProgress = true; // Um quiz está em andamento
+            quizContainer.style.display = 'block';
+            loadNextQuestion();
+        }
+
+        // Função para carregar a próxima pergunta do quiz
+        function loadNextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizQuestions.length) {
+                const question = quizQuestions[currentQuestionIndex];
+                quizContainer.innerHTML = `
+                    <div>${question.question}</div>
+                    <button class="quiz-button" onclick="answerQuestion('Verdadeiro')">Verdadeiro</button>
+                    <button class="quiz-button" onclick="answerQuestion('Falso')">Falso</button>
+                `;
+            } else {
+                message.textContent = "Você completou o quiz! Parabéns!";
+                quizContainer.style.display = 'none'; // Esconde o quiz ao final
+                canMove = true; // Permite que o personagem se mova novamente após o fim do quiz
+                currentQuestionIndex = -1; // Reseta o índice de perguntas
+            }
+        }
+
+        // Função para responder ao quiz
+        function answerQuestion(answer) {
+            const question = quizQuestions[currentQuestionIndex];
+            if (question.answer === answer) {
+                message.textContent = "Resposta correta!";
+                moveCharacterOnCorrectAnswer(); // Move o personagem após uma resposta correta
+                quizInProgress = false; // Quiz finalizado
+                quizContainer.style.display = 'none'; // Esconde o quiz
+                canMove = true; // Permite que o personagem se mova novamente
+
+                // Se a última pergunta foi respondida corretamente, faz a estrutura subir
+                if (isRocketReadyToLaunch && currentQuestionIndex === quizQuestions.length - 1) {
+                    launchRocket();
+                }
+            } else {
+                message.textContent = "Resposta incorreta! Tente novamente.";
+                loadNextQuestion(); // Carrega a próxima pergunta
+            }
+        }
+
+        // Função para mover o personagem após resposta correta
+        function moveCharacterOnCorrectAnswer() {
+            let left = parseInt(character.style.left) || 50;
+            character.style.left = (left + 20) + 'px'; // Move o personagem para a direita
+        }
+
+        // Função para verificar se o personagem está perto do foguete
+        function isCharacterNearRocket() {
+            const charRect = character.getBoundingClientRect();
+            const rocketRect = rocketParts[0].getBoundingClientRect(); // Verifica a primeira parte do foguete
+            return isIntersecting(charRect, rocketRect);
+        }
+
+        // Função para lançar o foguete
+        function launchRocket() {
+            if (!isCharacterNearRocket()) {
+                message.textContent = "Você precisa estar perto do foguete para decolar!";
+                return; // Impede o lançamento se o personagem não estiver perto
+            }
+
+            character.style.display = 'none'; // Faz o personagem desaparecer
+            rocketParts.forEach(part => part.style.display = 'block'); // Mostrar todas as partes do foguete
+
+            let position = 0; // Posição inicial do foguete
+            const interval = setInterval(() => {
+                position += 2; // Aumenta a posição para simular subida
+                rocketParts.forEach(part => {
+                    part.style.bottom = (parseInt(part.style.bottom) + 2) + 'px';
+                });
+            }, 20); // Controla a velocidade da subida
+
+            // Após 6 segundos, exibe a mensagem
+            setTimeout(() => {
+                clearInterval(interval); // Para a animação
+                message.textContent = "Foguete L.P.H.39B está no espaço!"; // Mensagem após 6 segundos
+            }, 6000); // 6000 milissegundos = 6 segundos
+        }
+
+        // Função para mover o personagem
+        function moveCharacter(direction) {
+            if (!canMove) return;
+            const left = parseInt(character.style.left) || 0;
+            if (direction === 'left') {
+                character.style.left = Math.max(0, left - 10) + 'px'; // Impede que o personagem saia da tela
+                character.style.transform = 'scaleX(-1)'; // Inverte a imagem para a esquerda
+            } else {
+                character.style.left = Math.min(window.innerWidth - 40, left + 10) + 'px'; // Limita o movimento à largura da tela
+                character.style.transform = 'scaleX(1)'; // Restaura a imagem para a direita
+            }
+            checkCollection();
+        }
+
+        // Eventos dos botões
+        document.getElementById('leftBtn').onclick = () => moveCharacter('left');
+        document.getElementById('rightBtn').onclick = () => moveCharacter('right');
+        document.getElementById('launchBtn').onclick = () => {
+            launchRocket();
+        };
+        document.getElementById('resetBtn').onclick = () => location.reload();
+
+        // Interação com a bola
+        document.getElementById('interactiveBall').onclick = () => {
+            message.textContent = "Desenvolvido por Luis H. F. Morales com colaboração do Pedro";
+        };
+
+        // Monitora o movimento do personagem
+        setInterval(checkCollection, 100);
+
+        // Adiciona eventos de teclado para movimentação
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowLeft' || event.key === 'a') {
+                moveCharacter('left');
+            } else if (event.key === 'ArrowRight' || event.key === 'd') {
+                moveCharacter('right');
+            }
+        });
+    </script>
+</body>
+</html>
